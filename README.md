@@ -1,5 +1,7 @@
 # Kyte Lambda Scripts
 
+[![Deploy to CDN](https://github.com/keyqcloud/kyte-lambda-site-management/actions/workflows/main.yml/badge.svg)](https://github.com/keyqcloud/kyte-lambda-site-management/actions/workflows/main.yml)
+
 This repository contains AWS Lambda scripts for managing Kyte-related operations. The Lambda scripts can be set up manually or deployed using the provided CloudFormation template.
 
 ## CloudFormation
