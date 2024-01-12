@@ -1,4 +1,4 @@
-name: Copy latest tag to S3
+name: Deploy to CDN
 
 on:  
   push:
