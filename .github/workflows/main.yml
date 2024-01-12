@@ -1,0 +1,32 @@
+name: Copy latest tag to S3
+
+on:  
+  push:
+    tags:
+      - '*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out source code
+      uses: actions/checkout@v3
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Extract tag name
+      run: echo "TAG_NAME=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
+    - name: Copy latest files to S3
+      run: aws s3 cp ./releases/latest/kyte-site-management.zip s3://${{ secrets.S3_BUCKET }}/lambda/functions/latest/kyte-site-management.zip
+    - name: Sync archive files to S3
+      run: aws s3 cp ./releases/archive/kyte-site-management-${{ env.TAG_NAME }}.zip s3://${{ secrets.S3_BUCKET }}/lambda/functions/archive/kyte-site-management-${{ env.TAG_NAME }}.zip
+
+    - name: Invalidate CloudFront cache for latest files
+      run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CF_DISTRIBUTION_ID }} --paths '/*'
