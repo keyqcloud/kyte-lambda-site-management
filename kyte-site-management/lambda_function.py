@@ -347,6 +347,7 @@ def cf_disable_function(body):
         cf.update_distribution(DistributionConfig=distribution_config, Id=body['cf_id'], IfMatch=ETag)
         # update action to cf_delete and send message to sns
         body['action'] = 'cf_delete'
+        body['retry'] = 0 # retry count
         publish_to_sns(os.environ['site_management_topic'], str(body['site_id']), body)
         
         return {
