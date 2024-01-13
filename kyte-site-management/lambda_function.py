@@ -283,6 +283,7 @@ def cf_create_function(body):
         body['action'] = 'cf_check_deployed'
         body['cf_id'] = distribution['Distribution']['Id']
         body['db_param'] = param
+        body['retry'] = 0 # retry count
         publish_to_sns(os.environ['site_management_topic'], str(body['site_id']), body)
 
         return {
@@ -305,13 +306,30 @@ def cf_check_deployed_function(body):
             db_request = {'action':'update', 'db_name':os.environ['db_name'], 'param':body['param'], 'callerId':str(time.time())}
             publish_to_sns(os.environ['db_transaction_topic'], str(body['site_id']), db_request)
         else:
-            time.sleep(60)
-            body['CallerReference'] = str(time.time()).replace(".", "")
-            publish_to_sns(os.environ['site_management_topic'], str(body['site_id']), body)
-            return {
-                'statusCode': 200,
-                'body': 'CloudFront distribution '+body['cf_id']+' not deployed yet, added back to queue'
-            }
+            retry_limit = os.environ.get('retry_limit', 5)
+            try:
+                retry_limit = int(retry_limit)
+            except ValueError:
+                retry_limit = 5
+
+            sleep_time = os.environ.get('sleep_time', 5)
+            try:
+                sleep_time = int(sleep_time)
+            except ValueError:
+                sleep_time = 5
+
+            if body['retry'] >= retry_limit:
+                logger.error(f"Reached maximum retry of {retry_limit}")
+                return {'statusCode': 500, 'body': f"Reached maximum retry of {retry_limit}"}
+            else:
+                body['retry'] += 1 # increment retry count
+                time.sleep(sleep_time)
+                body['CallerReference'] = str(time.time()).replace(".", "")
+                publish_to_sns(os.environ['site_management_topic'], str(body['site_id']), body)
+                return {
+                    'statusCode': 200,
+                    'body': 'CloudFront distribution '+body['cf_id']+' not deployed yet, added back to queue'
+                }
     except Exception as e:
         logger.error(f"Error in cf_check_deployed_function: {str(e)}")
         return {'statusCode': 500, 'body': 'Error checking deployment status for CloudFront distribution'+body['cf_id']}
@@ -364,14 +382,31 @@ def cf_delete_function(body):
                 'body': 'CloudFront distribution '+body['cf_id']+' deleted'
             }
         else:
-            # if disabled, if not disabled then send message to sns
-            time.sleep(60)
-            body['CallerReference'] = str(time.time()).replace(".", "")
-            publish_to_sns(os.environ['site_management_topic'], str(body['site_id']), body)
-            return {
-                'statusCode': 200,
-                'body': 'CloudFront distribution '+body['cf_id']+' not disabled yet, added back to queue'
-            }
+            retry_limit = os.environ.get('retry_limit', 5)
+            try:
+                retry_limit = int(retry_limit)
+            except ValueError:
+                retry_limit = 5
+
+            sleep_time = os.environ.get('sleep_time', 5)
+            try:
+                sleep_time = int(sleep_time)
+            except ValueError:
+                sleep_time = 5
+                
+            if body['retry'] >= retry_limit:
+                logger.error(f"Reached maximum retry of {retry_limit}")
+                return {'statusCode': 500, 'body': f"Reached maximum retry of {retry_limit}"}
+            else:
+                body['retry'] += 1 # increment retry count
+                # if disabled, if not disabled then send message to sns
+                time.sleep(sleep_time)
+                body['CallerReference'] = str(time.time()).replace(".", "")
+                publish_to_sns(os.environ['site_management_topic'], str(body['site_id']), body)
+                return {
+                    'statusCode': 200,
+                    'body': 'CloudFront distribution '+body['cf_id']+' not disabled yet, added back to queue'
+                }
     except Exception as e:
         logger.error(f"Error in cf_delete_function: {str(e)}")
         return {'statusCode': 500, 'body': 'Error deleting CloudFront distribution'}

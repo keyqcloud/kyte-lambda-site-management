@@ -21,6 +21,8 @@ This Lambda script manages the creation and deletion of Kyte sites. It has a tim
 - `db_transaction_topic`: ARN for the DB transactions SNS topic.
 - `site_management_topic`: ARN for the Kyte site management SNS topic.
 - `db_name`: Name of the database.
+- `retry_limit`: Maximum number of retries before giving up. (default is 5 if no env var is specified)
+- `sleep_time`: Number of seconds to sleep between checking CF distribution status.
 
 ### Required IAM Execution Role
 ```json
