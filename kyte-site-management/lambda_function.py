@@ -303,7 +303,7 @@ def cf_check_deployed_function(body):
         distribution = cf.get_distribution(Id=body['cf_id'])
         distribution_config = distribution['Distribution']['DistributionConfig']
         if distribution_config['Enabled'] == True and distribution['Distribution']['Status']=='Deployed':
-            db_request = {'action':'update', 'db_name':os.environ['db_name'], 'param':body['param'], 'callerId':str(time.time())}
+            db_request = {'action':'update', 'db_name':os.environ['db_name'], 'param':body['db_param'], 'callerId':str(time.time())}
             publish_to_sns(os.environ['db_transaction_topic'], str(body['site_id']), db_request)
         else:
             retry_limit = os.environ.get('retry_limit', 5)
