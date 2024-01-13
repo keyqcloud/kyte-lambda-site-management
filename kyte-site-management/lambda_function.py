@@ -17,7 +17,7 @@ acm_client = boto3.client('acm')
 def lambda_handler(event, context):
     try:
         for record in event['Records']:
-            body = json.loads(record['body'])
+            body = json.loads(record['Sns']['Message'])
             action = body['action']
 
             # Define functions for each action
