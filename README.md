@@ -41,6 +41,24 @@ This Lambda script manages the creation and deletion of Kyte sites. It has a tim
             "Resource": [
                 "arn:aws:logs:[region]:[account]:log-group:/aws/lambda/kyte-site-management:*"
             ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sns:Publish"
+            ],
+            "Resource": [
+                "arn:aws:sns:[region]:[account]:[site-management-sns-topic-arn]"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sns:Publish"
+            ],
+            "Resource": [
+                "arn:aws:sns:[region]:[account]:[db-transaction-sns-topic-arn]"
+            ]
         }
     ]
 }
