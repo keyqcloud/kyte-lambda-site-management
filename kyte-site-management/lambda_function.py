@@ -29,6 +29,7 @@ def lambda_handler(event, context):
                 's3_update_website': s3_update_website_function,
                 's3_delete': s3_delete_function,
                 'cf_create': cf_create_function,
+                'cf_check_deployed': cf_check_deployed_function,
                 'cf_disable': cf_disable_function,
                 'cf_delete': cf_delete_function,
                 'cf_invalidate': cf_invalidate_function,
@@ -278,8 +279,11 @@ def cf_create_function(body):
         else:
             param['data']['cfMediaDistributionId'] = distribution['Distribution']['Id']
             param['data']['cfMediaDomain'] = distribution['Distribution']['DomainName']
-        db_request = {'action':'update', 'db_name':os.environ['db_name'], 'param':param, 'callerId':str(time.time())}
-        publish_to_sns(os.environ['db_transaction_topic'], str(body['site_id']), db_request)
+
+        body['action'] = 'cf_check_deployed'
+        body['cf_id'] = distribution['Distribution']['Id']
+        body['db_param'] = param
+        publish_to_sns(os.environ['site_management_topic'], str(body['site_id']), body)
 
         return {
             'statusCode': 200,
@@ -288,6 +292,29 @@ def cf_create_function(body):
     except Exception as e:
         logger.error(f"Error in cf_create_function: {str(e)}")
         return {'statusCode': 500, 'body': 'Error creating CloudFront distribution'}
+
+def cf_check_deployed_function(body):
+    try:
+        # Logic for cf_delete action
+        cf = boto3.client('cloudfront')
+
+        # check the status of the distribution and delete
+        distribution = cf.get_distribution(Id=body['cf_id'])
+        distribution_config = distribution['Distribution']['DistributionConfig']
+        if distribution_config['Enabled'] == True and distribution['Distribution']['Status']=='Deployed':
+            db_request = {'action':'update', 'db_name':os.environ['db_name'], 'param':body['param'], 'callerId':str(time.time())}
+            publish_to_sns(os.environ['db_transaction_topic'], str(body['site_id']), db_request)
+        else:
+            time.sleep(60)
+            body['CallerReference'] = str(time.time()).replace(".", "")
+            publish_to_sns(os.environ['site_management_topic'], str(body['site_id']), body)
+            return {
+                'statusCode': 200,
+                'body': 'CloudFront distribution '+body['cf_id']+' not deployed yet, added back to queue'
+            }
+    except Exception as e:
+        logger.error(f"Error in cf_check_deployed_function: {str(e)}")
+        return {'statusCode': 500, 'body': 'Error checking deployment status for CloudFront distribution'+body['cf_id']}
 
 def cf_disable_function(body):
     try:
