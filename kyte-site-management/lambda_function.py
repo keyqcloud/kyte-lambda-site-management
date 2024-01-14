@@ -449,8 +449,8 @@ def acm_delete_function(body):
 
 def default_action(body):
     # Handle default action or invalid action
-    logger.warning(f"Unknown action requested: {body.get('action')}")
+    logger.info(f"Ignoring unrecongized action - {body.get('action')}")
     return {
         'statusCode': 400,
-        'body': 'Unknown action requested: '+body['action']
+        'body': 'Ignoring unrecongized action - '+body['action']
     }
