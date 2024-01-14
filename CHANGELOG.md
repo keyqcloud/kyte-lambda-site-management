@@ -1,3 +1,7 @@
+## 1.0.3
+
+- Updated `default_action` to output relevant message
+
 ## 1.0.2
 
 - Add retry counter and threshold for CF tasks
