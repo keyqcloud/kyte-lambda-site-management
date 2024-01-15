@@ -38,6 +38,7 @@ if [ "$#" -eq 1 ]; then
 
     git add .
     git commit -m "release $1"
+    git push
     check_success "Committed and pushed $1 to git" "Git push failed."
 
     git tag "v$1"
